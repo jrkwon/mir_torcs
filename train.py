@@ -22,7 +22,7 @@ def main():
         drive_train.train(show_summary=False)    
 
     except KeyboardInterrupt:
-        print ('Shutdown requested. Exiting...')
+        print ('\nShutdown requested. Exiting...')
     except Exception:
         traceback.print_exc(file=sys.stdout)
     sys.exit(0)
