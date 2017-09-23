@@ -6,12 +6,14 @@ Created on Fri Sep 22 16:50:52 2017
 @author: jaerock
 """
 
-import sys, traceback
+import sys
 
 from drive_train import DriveTrain
     
 #'../mir_torcs_drive_data/2017-05-31-20-49-09' 
-        
+
+###############################################################################
+#       
 def main():
     try:
         if (len(sys.argv) != 2):
@@ -23,10 +25,9 @@ def main():
 
     except KeyboardInterrupt:
         print ('\nShutdown requested. Exiting...')
-    except Exception:
-        traceback.print_exc(file=sys.stdout)
-    sys.exit(0)
-        
+       
 
+###############################################################################
+#       
 if __name__ == '__main__':
     main()
