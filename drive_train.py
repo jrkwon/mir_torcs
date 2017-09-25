@@ -34,19 +34,22 @@ class DriveTrain:
         self.train_generator = None
         self.valid_generator = None
         self.train_hist = None
+        self.drive = None
         
-        self.drive = DriveData(csv_path)
-        
-        self.config = Config(model_name)
+        self.config = Config() #model_name)
         
         self.data_path = data_path
         self.model_name = model_name
         
-
+        self.drive = DriveData(self.csv_path)
+        
+        
     ###########################################################################
     #
     def _prepare_data(self):
     
+        self.drive.read()
+        
         from sklearn.model_selection import train_test_split
         
         samples = list(zip(self.drive.image_names, self.drive.measurements))
@@ -75,15 +78,14 @@ class DriveTrain:
                   optimizer=keras.optimizers.Adadelta(),
                   metrics=['accuracy'])
 
-                    
-                    
+                                        
     ###########################################################################
     #
     def _build_model(self, show_summary=True):
         
         def _generator(samples, batch_size=self.config.batch_size):
             num_samples = len(samples)
-            while 1: # Loop forever so the generator never terminates
+            while True: # Loop forever so the generator never terminates
                 samples = sklearn.utils.shuffle(samples)
                 for offset in range(0, num_samples, batch_size):
                     batch_samples = samples[offset:offset+batch_size]
@@ -186,7 +188,6 @@ class DriveTrain:
     ###########################################################################
     #
     def train(self, show_summary=True):
-        self.drive.read()
         
         self._prepare_data()
         self._build_model(show_summary)
