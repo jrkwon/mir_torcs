@@ -131,6 +131,8 @@ class DriveTest:
             raise NameError('Generators are not ready.')
         
         print("\nEvaluating the model with test data sets ...")
+        ## Note: Do not use multiprocessing or more than 1 worker.
+        ##       This will genereate threading error!!!
         score = self.model.evaluate_generator(self.test_generator, 
                                 self.num_test_samples//self.config.batch_size) 
                                 #workers=1)
