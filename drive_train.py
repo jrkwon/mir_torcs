@@ -65,7 +65,7 @@ class DriveTrain:
     ###########################################################################
     #
     def _model(self):
-        return resnet.ResnetBuilder.build_resnet_50(
+        return resnet.ResnetBuilder.build_resnet_18(
                     (self.config.image_size[2], 
                      self.config.image_size[1], 
                      self.config.image_size[0]), 
