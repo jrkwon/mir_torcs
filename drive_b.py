@@ -1,28 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Sep 23 13:49:23 2017
+Created on Tue Sep 26 13:46:15 2017
 
 @author: jaerock
 """
 
-
 import sys
+#import cv2
 
-from drive_test import DriveTest
+from drive_batch import DriveBatch
+#from config import Config
     
 #'../mir_torcs_drive_data/2017-05-31-20-49-09' 
 
 ###############################################################################
 #       
 def main():
+#    config = Config()
+    
     try:
         if (len(sys.argv) != 3):
-            print('Use model_name folder_name_to_drive_data.')
+            print('Use model_name drive_data_folder.')
             return
         
-        drive_test = DriveTest(sys.argv[1])
-        drive_test.test(sys.argv[2])    
+        drive_batch = DriveBatch(sys.argv[1], sys.argv[2], show_summary = False)
+        drive_batch.run()
 
     except KeyboardInterrupt:
         print ('\nShutdown requested. Exiting...')

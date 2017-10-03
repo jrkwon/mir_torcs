@@ -9,13 +9,13 @@ Created on Fri Sep 22 21:29:53 2017
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
-import keras
+#import keras
 import sklearn
-import resnet
 
+from net_model import NetModel
 from drive_data import DriveData
 from config import Config
-
+from image_process import ImageProcess
 
 ###############################################################################
 #
@@ -30,7 +30,6 @@ class DriveTrain:
         csv_path = data_path + '/' + model_name + '.csv' # use it for csv file name 
         
         self.csv_path = csv_path
-        self.model = None        
         self.train_generator = None
         self.valid_generator = None
         self.train_hist = None
@@ -39,9 +38,11 @@ class DriveTrain:
         self.config = Config() #model_name)
         
         self.data_path = data_path
-        self.model_name = model_name
+        #self.model_name = model_name
         
         self.drive = DriveData(self.csv_path)
+        self.net_model = NetModel(data_path)
+        self.image_process = ImageProcess()
         
         
     ###########################################################################
@@ -61,28 +62,11 @@ class DriveTrain:
         print('Train samples: ', self.num_train_samples)
         print('Valid samples: ', self.num_valid_samples)
     
-    
-    ###########################################################################
-    #
-    def _model(self):
-        return resnet.ResnetBuilder.build_resnet_18(
-                    (self.config.image_size[2], 
-                     self.config.image_size[1], 
-                     self.config.image_size[0]), 
-                     self.config.num_outputs)
-                    
-    ##########################################################################
-    #
-    def _model_compile(self):
-        self.model.compile(loss=keras.losses.mean_squared_error,
-                  optimizer=keras.optimizers.Adadelta(),
-                  metrics=['accuracy'])
-
-                                        
+                                          
     ###########################################################################
     #
     def _build_model(self, show_summary=True):
-        
+
         def _generator(samples, batch_size=self.config.batch_size):
             num_samples = len(samples)
             while True: # Loop forever so the generator never terminates
@@ -96,29 +80,32 @@ class DriveTrain:
                         image_path = self.data_path + '/' + image_name + \
                                      self.config.fname_ext
                         image = cv2.imread(image_path)
+                        image = cv2.resize(image, (self.config.image_size[0],
+                                                   self.config.image_size[1]))
+                        image = self.image_process.equalize_histogram(image)
                         images.append(image)
         
                         steering_angle, throttle = measurement
-                        #angles.append(float(steering_angle))
-                        measurements.append(measurement)
-        
+                        #measurements.append(measurement)
+                        measurements.append(steering_angle)
+                        
                         # add the flipped image of the original
                         images.append(cv2.flip(image,1))
                         measurement = (steering_angle*-1.0, measurement[1]) 
-                        measurements.append(measurement)
+                        #measurements.append(measurement)
+                        measurements.append(steering_angle*-1.0)
         
+                        #print(image_path, steering_angle)
                     X_train = np.array(images)
                     y_train = np.array(measurements)
+
                     yield sklearn.utils.shuffle(X_train, y_train)
         
         self.train_generator = _generator(self.train_data)
         self.valid_generator = _generator(self.valid_data)
         
-        self.model = self._model()
-        self._model_compile()
-
         if (show_summary):
-            self.model.summary()
+            self.net_model.model.summary()
     
     ###########################################################################
     #
@@ -133,43 +120,23 @@ class DriveTrain:
         
         # checkpoint
         callbacks = []
-        checkpoint = ModelCheckpoint(self.model_name+'.h5', monitor='val_acc', 
+        checkpoint = ModelCheckpoint(self.net_model.name+'.h5', monitor='val_loss', 
                                      verbose=1, save_best_only=True, mode='min')
         callbacks.append(checkpoint)
         
         # early stopping
-        earlystop = EarlyStopping(monitor='val_acc', min_delta=0, patience=0, 
+        earlystop = EarlyStopping(monitor='val_loss', min_delta=0, patience=0, 
                                   verbose=1, mode='min')
         callbacks.append(earlystop)
         
-        self.train_hist = self.model.fit_generator(
-                            self.train_generator, 
-                            steps_per_epoch=self.num_train_samples//self.config.batch_size, 
-                            epochs=self.config.num_epochs, 
-                            validation_data=self.valid_generator,
-                            validation_steps=self.num_valid_samples//self.config.batch_size,
-                            verbose=1, callbacks=callbacks)
+        self.train_hist = self.net_model.model.fit_generator(
+                self.train_generator, 
+                steps_per_epoch=self.num_train_samples//self.config.batch_size, 
+                epochs=self.config.num_epochs, 
+                validation_data=self.valid_generator,
+                validation_steps=self.num_valid_samples//self.config.batch_size,
+                verbose=1, callbacks=callbacks)
     
-    ###########################################################################
-    #
-    # save model
-    def _save_model(self):
-        
-        json_string = self.model.to_json()
-        open(self.data_path+'.json', 'w').write(json_string)
-        self.model.save_weights(self.data_path+'.h5', overwrite=True)
-    
-    
-    ###########################################################################
-    # model_path = '../data/2007-09-22-12-12-12.
-    def load_model(self):
-        
-        from keras.models import model_from_json
-        
-        self.model = model_from_json(open(self.data_path+'.json').read())
-        self.model.load_weights(self.data_path+'.h5')
-        self._model_compile()
-        
 
     ###########################################################################
     #
@@ -179,10 +146,10 @@ class DriveTrain:
         
         ### plot the training and validation loss for each epoch
         plt.plot(self.train_hist.history['loss'])
-        plt.title('model mean squared error loss')
-        plt.ylabel('mean squared error loss')
+        plt.plot(self.train_hist.history['val_loss'])
+        plt.ylabel('mse loss')
         plt.xlabel('epoch')
-        plt.legend(['training set'], loc='upper right')
+        plt.legend(['training set', 'validatation set'], loc='upper right')
         plt.show()
         
     ###########################################################################
@@ -192,5 +159,5 @@ class DriveTrain:
         self._prepare_data()
         self._build_model(show_summary)
         self._start_training()
-        self._save_model()
+        self.net_model.save()
         self._plot_training_history()
