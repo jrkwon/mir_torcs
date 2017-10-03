@@ -85,7 +85,7 @@ Loss:  0.00106151084765
 ### drive_batch.py
 This class manages a batch test of a trained model. 
 
-### batchdrive.py
+### run_batch.py
 This is an example of how to use the `DriveBatch` class in the `drive_batch.py`
 
 ```
@@ -129,7 +129,7 @@ You can check the `abs_error` to see the trained model's accuracy in general.
 ### drive_run.py
 This is a simple class to show how to run the trained model.
 
-### drive.py
+### run.py
 If you give a trained model name and an image as input, this will load the model and print out the prediction value. 
 
 
