@@ -291,29 +291,10 @@ def drive_example(c):
     correct thing to do is write your own `drive()` function.'''
     S = c.S.d
     R = c.R.d
-    target_speed = 15
 
-    '''# Damage Control
-    target_speed-= S['damage'] * .05
-    if target_speed < 25: target_speed= 25'''
-
-    '''# Steer To Corner
-    R['steer']= S['angle']*10 / PI
-    # Steer To Center
-    R['steer']-= S['trackPos']*.10
-    R['steer']= clip(R['steer'],-1,1)'''
-
-    if (R['steer'] != 0):
-        print('Steering = ', R['steer'])
-        print('Speed = ', S['speedX'], 'kph')
-
-    # Throttle Control
-    if S['speedX'] < target_speed - (R['steer']*50):
-        R['accel']+= .01
-    else:
-        R['accel']-= .01
-    if S['speedX']<10:
-       R['accel']+= 1/(S['speedX']+.1)
+    print('Steering = ', R['steer'])
+#    print('Speed = ', S['speedX'], 'kph')
+#    print('Acceleration = ', R['accel'])
 
     # Traction Control System
     if ((S['wheelSpinVel'][2]+S['wheelSpinVel'][3]) -
