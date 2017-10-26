@@ -29,7 +29,7 @@ def main():
         image = cv2.imread(sys.argv[2])
         image = cv2.resize(image, (config.image_size[0],
                                    config.image_size[1]))
-        image = image_process.equalize_histogram(image)
+        image = image_process.process(image)
 
         
         if (len(image) == 0):

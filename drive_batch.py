@@ -72,10 +72,11 @@ class DriveBatch:
             image = cv2.imread(image_fname)
             image = cv2.resize(image, (self.config.image_size[0],
                                        self.config.image_size[1]))
-            image = self.image_process.equalize_histogram(image)
+            image = self.image_process.process(image)
             
             npimg = np.expand_dims(image, axis=0)
             predict = self.net_model.model.predict(npimg)
+            predict = predict / self.config.raw_scale
             
             #print(image_name, measurement[0], predict[0][0],\ 
             #                  abs(measurement[0]-predict[0][0]))

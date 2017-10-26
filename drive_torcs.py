@@ -10,81 +10,133 @@ import sys
 import threading
 import snakeoil
 import cv2
-import numpy as np
-from PIL import Image
-import time
 
 from drive_run import DriveRun
 from screen import LocalScreenGrab
-from pid_controller import PID
+from config import Config
+from image_process import ImageProcess
+
+use_threading = True
 
 prediction = 0
-
-class Thread_Torcs(threading.Thread):
+is_driving = False
+ 
+class ThreadTorcs(threading.Thread):
+    
     def __init__(self, name):
         threading.Thread.__init__(self)
         self.name = name
-        
+        self.config = Config()
+       
     def run(self):
-        global prediction
-        
-#       establish connection with TORCS server
-        C = snakeoil.Client()
-        
-#       load PID controller and set vehicle speed
-        pid = PID(1.0, 0.1, 0.1)
-        pid.setPoint(15.5)
-        try:
-            while True:
-                C.get_servers_input()
-                R = C.R.d
-                S = C.S.d
-                R['steer'] = prediction
-                R['accel'] = pid.update(S['speedX'])
-                R['accel'] = np.clip(R['accel'], 0, 0.1)
-                snakeoil.drive_example(C)
-                C.respond_to_server()
-            C.shutdown()
-        except KeyboardInterrupt:
-            print('\nShutdown requested. Exiting...')
+        global prediction, is_driving
+       
+        # establish connection with TORCS server
+        client = snakeoil.Client()
+       
+        is_driving = True
+        while True:
+            if client.get_servers_input() == False:
+                break
             
-class Thread_Prediction(threading.Thread):
+            R = client.R.d
+            
+            R['steer'] = -prediction      
+            snakeoil.drive(client)
+            client.respond_to_server()
+            
+        client.shutdown()
+        is_driving = False
+        
+           
+class ThreadPrediction(threading.Thread):
+    
     def __init__(self,name):
         threading.Thread.__init__(self)
         self.name = name
-        
+        self.config = Config()
+        self.image_process = ImageProcess()
+
+       
     def run(self):
-        global prediction
+        global prediction, is_driving
+       
+        # load model
+        drive = DriveRun(sys.argv[1])
+        print('model loaded...')
         
-#       define size of bounding box and pass it to LocalScreenGrab class
-        bbox = (65,270,705,410)
+        while True:
+           # define size of bounding box and pass it to LocalScreenGrab class
+            bbox = self.config.capture_area
+            local_grab = LocalScreenGrab(bbox)
+            
+            screenshot = (local_grab.grab()).reshape(self.config.capture_size)
+            image = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)     
+            image = cv2.resize(image, (self.config.image_size[0],
+                                       self.config.image_size[1]))
+            image = self.image_process.process(image)
+            #        cv2.imwrite('a.jpg', image)
+            
+            prediction = drive.run(image)
+            if abs(prediction) < self.config.jitter_tolerance:
+                prediction = 0
+                
+            if is_driving == False:
+                break
+         
+
+def run(drive):
+    config = Config()
+    image_process = ImageProcess()
+
+    # establish connection with TORCS server
+    client = snakeoil.Client()
+
+    while True: 
+        if client.get_servers_input() == False:
+            break
+        R = client.R.d
+
+        # define size of bounding box and pass it to LocalScreenGrab class
+        bbox = config.capture_area
         local_grab = LocalScreenGrab(bbox)
         
-#       load model
-        drive_run = DriveRun(sys.argv[1])
-        print('model loaded...')
-        try:
-            while True:
-                arr_screenshot = (local_grab.grab()).reshape(140, 640, 3)
-                game_image = cv2.resize(arr_screenshot, (0,0), fx = 0.25, fy = 0.25)
-                prediction = (float(drive_run.run(game_image))) / 255
-                #print(prediction)
-#                if (abs(prediction) < 0.05) is True:
-#                    prediction = 0
-                #print ('time_taken to get prediction {}'.format(time.time()-last_time))
-        except KeyboardInterrupt:
-            print('\nShutdown requested. Exiting...')
-          
+        screenshot = (local_grab.grab()).reshape(config.capture_size)
+        image = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)     
+        image = cv2.resize(image, (config.image_size[0],
+                                        config.image_size[1]))
+        image = image_process.process(image)
+
+        
+        prediction = drive.run(image)
+        if abs(prediction) < config.jitter_tolerance:
+            prediction = 0
+            
+        R['steer'] = -prediction
+        snakeoil.drive(client)
+        client.respond_to_server()
+    client.shutdown()
+        
+    
 def main():
     try:
         if(len(sys.argv) != 2):
             print('Use model_name')
             return
-        Thread_Torcs("TORCS").start()
-        Thread_Prediction('Prediction').start()
         
-    except KeyboardInterrupt:
-            print('\nShutdown requested. Exiting...')
+        if use_threading == True:
+            ThreadTorcs('TORCS').start()
+            ThreadPrediction('Prediction').start()
+        else:
+            # load model
+            drive = DriveRun(sys.argv[1])
+            print('model loaded...')
+            
+            run(drive)
+
+        
+    except KeyboardInterrupt:    
+        print('\nShutdown requested. Exiting...')
             
 if __name__ == '__main__':
     main()

@@ -86,12 +86,13 @@ class DriveTest:
                         image = cv2.imread(image_path)
                         image = cv2.resize(image, (self.config.image_size[0],
                                                    self.config.image_size[1]))
-                        image = self.image_process.equalize_histogram(image)
+                        image = self.image_process.process(image)
                         images.append(image)
         
                         steering_angle, throttle = measurement
                         #angles.append(float(steering_angle))
-                        measurements.append(steering_angle)
+                        #measurements.append(steering_angle)
+                        measurements.append(steering_angle*self.config.raw_scale)
                         
                     X_train = np.array(images)
                     y_train = np.array(measurements)

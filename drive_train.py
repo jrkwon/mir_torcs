@@ -54,7 +54,8 @@ class DriveTrain:
         from sklearn.model_selection import train_test_split
         
         samples = list(zip(self.drive.image_names, self.drive.measurements))
-        self.train_data, self.valid_data = train_test_split(samples, test_size=0.3)
+        self.train_data, self.valid_data = train_test_split(samples, 
+                                            test_size=self.config.valid_rate)
         
         self.num_train_samples = len(self.train_data)
         self.num_valid_samples = len(self.valid_data)
@@ -82,18 +83,24 @@ class DriveTrain:
                         image = cv2.imread(image_path)
                         image = cv2.resize(image, (self.config.image_size[0],
                                                    self.config.image_size[1]))
-                        image = self.image_process.equalize_histogram(image)
+                        image = self.image_process.process(image)
                         images.append(image)
         
                         steering_angle, throttle = measurement
+                        
+                        if abs(steering_angle) < self.config.jitter_tolerance:
+                            steering_angle = 0
+                            
                         #measurements.append(measurement)
-                        measurements.append(steering_angle)
+                        #measurements.append(steering_angle)
+                        measurements.append(steering_angle*self.config.raw_scale)
                         
                         # add the flipped image of the original
                         images.append(cv2.flip(image,1))
                         measurement = (steering_angle*-1.0, measurement[1]) 
                         #measurements.append(measurement)
-                        measurements.append(steering_angle*-1.0)
+                        #measurements.append(steering_angle*-1.0)
+                        measurements.append(steering_angle*self.config.raw_scale*-1.0)
         
                         #print(image_path, steering_angle)
                     X_train = np.array(images)

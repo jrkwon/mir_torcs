@@ -33,17 +33,23 @@ class NetModel:
 
         self.model = Sequential([
                 Lambda(lambda x: x/127.5 - 1.0, input_shape=input_shape),
-                Conv2D(32, (3, 3), activation='relu', padding='same'),
+                Conv2D(24, (5, 5), activation='relu', padding='same'),
                 MaxPooling2D(pool_size=(2, 2), strides=(1, 1)),
-                Conv2D(64, (3, 3), activation='relu', padding='same'),
+                Conv2D(36, (5, 5), activation='relu', padding='same'),
                 MaxPooling2D(pool_size=(2, 2)),
-                Conv2D(128, (3, 3), activation='relu', padding='same'),
+                Conv2D(48, (5, 5), activation='relu', padding='same'),
+                MaxPooling2D(pool_size=(2, 2)),
+                Conv2D(64, (5, 5), activation='relu', padding='same'),
+                MaxPooling2D(pool_size=(2, 2)),
+                Conv2D(64, (5, 5), activation='relu', padding='same'),
                 MaxPooling2D(pool_size=(2, 2)),
                 Flatten(),
                 Dropout(0.5),
+                Dense(256, activation='relu'),
+                Dropout(0.5),
                 Dense(128, activation='relu'),
                 Dropout(0.5),
-                Dense(128),
+                Dense(64, activation='relu'),
                 Dense(self.config.num_outputs)])
         self._compile()
         
