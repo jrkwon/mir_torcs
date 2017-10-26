@@ -1,4 +1,4 @@
-# mir_torcs (v0.2)
+# mir_torcs (v0.4)
 
 ## Preparation
 
@@ -129,7 +129,14 @@ You can check the `abs_error` to see the trained model's accuracy in general.
 ### drive_run.py
 This is a simple class to show how to run the trained model.
 
-### run.py
+### run.py 
 If you give a trained model name and an image as input, this will load the model and print out the prediction value. 
 
+## TORCS driver using a trained model
+### snakeoil.py
+A modified version of snakeoil.py originally written by Chris X Edwards.
 
+### drive_torcs.py
+```
+$python drive_torcs.py steering_model_name
+```
