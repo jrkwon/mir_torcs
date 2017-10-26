@@ -83,7 +83,7 @@ class Client():
         self.trackname= 'unknown'
         self.stage= 3
         self.debug= False
-        self.maxSteps= 100000  # 50steps/second
+        self.maxSteps= 0 # 0: forever. # 100000  # 50steps/second
         #self.parse_the_command_line()
         if H: self.host= H
         if p: self.port= p
@@ -105,6 +105,7 @@ class Client():
             sys.exit(-1)
         # == Initialize Connection To Server ==
         self.so.settimeout(1)
+        count = 10
         while True:
             a= "-90 -75 -60 -45 -30 -20 -15 -10 -5 0 5 10 15 20 30 45 60 75 90"
             initmsg='%s(init %s)' % (self.sid,a)
@@ -117,9 +118,13 @@ class Client():
             try:
                 sockdata,addr= self.so.recvfrom(1024)
             except socket.error as emsg:
-                print ('Waiting for server............')
+                print ('Waiting for server........... count:', count)
+                if (count == 0):
+                    break
+                count -= 1
             if '***identified***' in str(sockdata):
                 print ('Client connected..............')
+                count = 10
                 break
 
     def parse_the_command_line(self):
@@ -165,33 +170,39 @@ class Client():
 
     def get_servers_input(self):
         '''Server's input is stored in a ServerState object'''
-        if not self.so: return
+        if not self.so: return False
         sockdata= str()
+        count = 10
         while True:
             try:
                 # Receive server data 
                 sockdata,addr= self.so.recvfrom(1024)
             except socket.error as emsg:
-                print ('Waiting for data..............')
+                print ('Waiting for data............ count:', count)
+                if count == 0:
+                    return False
+                count -= 1
             if '***identified***' in str(sockdata):
                 print ('Client connected..............')
+                count = 10
                 continue
             elif '***shutdown***' in str(sockdata):
                 #print ("Server has stopped the race. You were in %d place." % (self.S.d['racePos']))
                 self.shutdown()
-                return
+                return False
             elif '***restart***' in str(sockdata):
                 # What do I do here?
                 print ('	Server has restarted the race.')
                 # I haven't actually caught the server doing this.
                 self.shutdown()
-                return
+                return False
             elif not sockdata: # Empty?
                 continue       # Try again.
             else:
                 self.S.parse_server_str(sockdata)
                 if self.debug: print (self.S)
                 break # Can now return from this function.
+        return True
 
     def respond_to_server(self):
         if not self.so: return
@@ -286,41 +297,60 @@ def clip(v,lo,hi):
     elif v>hi: return hi
     else: return v
 
-def drive_example(c):
-    '''This is only an example. It will get around the track but the
-    correct thing to do is write your own `drive()` function.'''
-    S = c.S.d
-    R = c.R.d
+from config import Config 
 
-    print('Steering = ', R['steer'])
-#    print('Speed = ', S['speedX'], 'kph')
-#    print('Acceleration = ', R['accel'])
+def drive(c):
+    S= c.S.d
+    R= c.R.d
+    target_speed=Config().target_speed
+
+    # Steer 
+    # Steering is done by CNN
+    
+    # Clip the steer value
+    if R['steer'] < -1: R['steer']= -1
+    if R['steer'] >  1: R['steer']=  1
+        
+    print('---')
+    print('Steer = ', R['steer'])
+    print('Speed = ', S['speedX'], 'kph')
+    print('Accel = ', R['accel'])
+
+    # Speed control
+    if S['speedX'] > target_speed*1.1:
+        R['brake'] = 0.5
+    else:
+        R['brake'] = 0
+    
+    # Throttle Control
+    if S['speedX'] < target_speed - (R['steer']*target_speed/2): #1.6): #50):
+        R['accel']+= .01
+    else:
+        R['accel']-= .01
+    if S['speedX']<10:
+       R['accel']+= 1/(S['speedX']+.1)
 
     # Traction Control System
     if ((S['wheelSpinVel'][2]+S['wheelSpinVel'][3]) -
        (S['wheelSpinVel'][0]+S['wheelSpinVel'][1]) > 5):
        R['accel']-= .2
-    R['accel']= clip(R['accel'],0,1)
+       
+    if R['accel'] < 0: R['accel']= 0
+    if R['accel'] > 1: R['accel']= 1
 
     # Automatic Transmission
     R['gear']=1
-    if S['speedX']>50:
+    if S['speedX']>target_speed//3: #10: #50:
         R['gear']=2
-    if S['speedX']>80:
+    if S['speedX']>target_speed*2//3: #40: # 20: #80:
         R['gear']=3
-    if S['speedX']>110:
-        R['gear']=4
-    if S['speedX']>140:
-        R['gear']=5
-    if S['speedX']>170:
-        R['gear']=6
-    return
+    return    
 
 # ================ MAIN ================
 if __name__ == "__main__":
     C= Client()
     for step in range(C.maxSteps,0,-1):
         C.get_servers_input()
-        drive_example(C)
+        drive(C)
         C.respond_to_server()
     C.shutdown()

@@ -7,11 +7,15 @@ Created on Tue Oct  3 15:09:03 2017
 """
 
 import cv2
+import numpy as np
 
 class ImageProcess:
 
+    def process(self, img):
+        return self._normalize(img)
+        
     # img is expected as BGR         
-    def equalize_histogram(self, img, bgr = True):
+    def _equalize_histogram(self, img, bgr = True):
 
         img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
         # equalize the histogram of the Y channel
@@ -21,3 +25,12 @@ class ImageProcess:
         else:
             img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)
         return img
+    
+    def _normalize(self, img, bgr = True):
+
+        img_norm = np.zeros_like(img)
+        if (bgr != True): # if not bgr then assume it as RGB
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+        cv2.normalize(img, img_norm, 0, 255, cv2.NORM_MINMAX)
+        return img_norm
