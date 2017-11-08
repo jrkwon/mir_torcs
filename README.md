@@ -25,6 +25,14 @@ This class is for the CNN model. In this particular case where we are training s
 
 ## Training
 
+The training was not very successful in the early stages. So I did some changes in the training after investigating the training data set.
+
+### Scaling steering angles
+Most steering angle values are between -0.2 and 0.2. Only few pick values are found. To make the value be in the range -1 and 1, I used 5 as a multiplication factor to the steering angle. And when a trained model's prediction must scale down by the factor of 5.  
+
+### Jitters
+Since we collected data from a human driver's behavior, the steering angle has small jitters that prevent a network from being properly trained. So I removed those jitters. After scrutinizing the data sets, 0.002 was chosen as the minimum steering angle value. This means that if a steering angle is smaller than 0.002, the value will be considered as 0. This is done both in the training and prediction stage.
+
 ### train.py
 
 After all parameters are properly set in ``config.py``, this ``train.py`` is the ultimate solution for the training. 
