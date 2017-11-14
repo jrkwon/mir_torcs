@@ -92,7 +92,8 @@ class DriveTest:
                         steering_angle, throttle = measurement
                         #angles.append(float(steering_angle))
                         #measurements.append(steering_angle)
-                        measurements.append(steering_angle*self.config.raw_scale)
+                        measurements.append([steering_angle*self.config.raw_scale,
+                                             throttle*self.config.raw_scale_throttle])
                         
                     X_train = np.array(images)
                     y_train = np.array(measurements)

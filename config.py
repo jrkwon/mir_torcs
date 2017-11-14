@@ -13,13 +13,15 @@ class Config:
         self.version = (0, 4) # version 0.4
         self.valid_rate = 0.3
         self.image_size = (320//2, 70, 3) # (64, 64, 3) #(320, 70, 3)
-        self.num_outputs = 1  # steering_angle, throttle
+        self.num_outputs = 2  # steering_angle, throttle
         #self.model_name = model_name # 'torcs_2017-05-31-20-49-09'
         self.fname_ext = '.jpg'
         self.num_epochs = 20
         self.batch_size = 16 #64
         self.raw_scale = 5.0 # Multiply raw input by this scale
         self.jitter_tolerance = 0.002 # joystick jitter
+        self.min_throttle = 0.002 # ignore very small throttle/brake
+        self.raw_scale_throttle = 5.0
         self.capture_area = (65,280,705,420)
         self.capture_size = (self.capture_area[3]-self.capture_area[1], 
                              self.capture_area[2]-self.capture_area[0], 3)

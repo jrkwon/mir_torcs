@@ -90,17 +90,21 @@ class DriveTrain:
                         
                         if abs(steering_angle) < self.config.jitter_tolerance:
                             steering_angle = 0
+                        if abs(throttle) < self.config.min_throttle:
+                            throttle = 0
                             
-                        #measurements.append(measurement)
+                        measurement = [steering_angle*self.config.raw_scale, 
+                                       throttle*self.config.raw_scale_throttle]
+                        measurements.append(measurement)
                         #measurements.append(steering_angle)
-                        measurements.append(steering_angle*self.config.raw_scale)
+                        #measurements.append(steering_angle*self.config.raw_scale)
                         
                         # add the flipped image of the original
                         images.append(cv2.flip(image,1))
-                        measurement = (steering_angle*-1.0, measurement[1]) 
-                        #measurements.append(measurement)
+                        measurement = [measurement[0]*-1.0, measurement[1]] 
+                        measurements.append(measurement)
                         #measurements.append(steering_angle*-1.0)
-                        measurements.append(steering_angle*self.config.raw_scale*-1.0)
+                        #measurements.append(steering_angle*self.config.raw_scale*-1.0)
         
                         #print(image_path, steering_angle)
                     X_train = np.array(images)

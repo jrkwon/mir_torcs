@@ -76,12 +76,16 @@ class DriveBatch:
             
             npimg = np.expand_dims(image, axis=0)
             predict = self.net_model.model.predict(npimg)
-            predict = predict / self.config.raw_scale
+            steering = predict[0][0] / self.config.raw_scale
+            throttle = predict[0][1] / self.config.raw_scale_throttle
             
             #print(image_name, measurement[0], predict[0][0],\ 
             #                  abs(measurement[0]-predict[0][0]))
-            log = image_name+','+str(measurement[0])+','+str(predict[0][0])\
-                            +','+str(abs(measurement[0]-predict[0][0]))
+            log = image_name+','+str(measurement[0])+','+str(steering)\
+                            +','+str(abs(measurement[0]-steering))\
+                            +','+str(measurement[1])+','+str(throttle)\
+                            +','+str(abs(measurement[1]-throttle))
+                            
             file.write(log+'\n')
         
         file.close()
